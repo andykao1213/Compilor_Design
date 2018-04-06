@@ -15,6 +15,8 @@ DOUB	{INT}?"."{INT}
 CH		[a-z]
 CHAR	\'.\'
 ID		[[:alpha:]]+
+STR		L?\"(\\.|[^\\"])*\"
+SCI		({DOUB}|{INT})[Ee][+-]?{INT}
 
 %%
 
@@ -47,6 +49,14 @@ ID		[[:alpha:]]+
 }
 {ID}	{ 
 	fprintf(yyout, "#id:%s\n", yytext); 
+	strcat(buffer, yytext);
+}
+{STR}	{
+	fprintf(yyout, "#string:%s\n", yytext);
+	strcat(buffer, yytext);
+}
+{SCI}	{
+	fprintf(yyout, "#sci:%s\n", yytext);
 	strcat(buffer, yytext);
 }
 \n	{
