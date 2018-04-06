@@ -4,6 +4,8 @@
 	#include <string.h>
 	char buffer[1000];
 	int line_number = 0;
+	int token = 1;
+	int source = 1;
 %}
 
 KEY		void|int|double|bool|char|null|for|while|do|if|else|switch|return|break|continue|const|true|false|struct|case|default|fclose|clearerr|feof|ferror|fflush|fgetpos|fopen|fread|freopen|fseek|fsetpos|ftell|fwrite|remove|rename|rewind|setbuf|setvbuf|tmpfile|tmpnam|fprintf|printf|sprintf|vfprintf|vprintf|vsprintf|fscanf|scanf|sscanf|fgetc|fgets|fputc|fputs|getc|getchar|gets|putc|putchar|puts|ungetc|perror
@@ -17,51 +19,70 @@ CHAR	\'.\'
 ID		[[:alpha:]]+
 STR		L?\"(\\.|[^\\"])*\"
 SCI		({DOUB}|{INT})[Ee][+-]?{INT}
+S_ON	#{SPACE}?"pragma"{SPACE}"source"{SPACE}"on"
+S_OFF	#{SPACE}?"pragma"{SPACE}"source"{SPACE}"off"
+T_ON	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"on"
+T_OFF	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"off"
 
 %%
-
+{S_ON}	{
+	source = 1;
+	strcat(buffer, yytext);
+}
+{S_OFF}	{
+	source = 0;
+	strcat(buffer, yytext);
+}
+{T_ON}	{
+	token = 1;
+	strcat(buffer, yytext);
+}
+{T_OFF}	{
+	token = 0;
+	strcat(buffer, yytext);
+}
 {KEY}	{ 
-	fprintf(yyout, "#key:%s\n", yytext);
+	if(token)	fprintf(yyout, "#key:%s\n", yytext);
 	strcat(buffer, yytext); 
 } 
 {SPACE}	{ 
 	strcat(buffer, yytext);
 }
 {OP}	{ 
-	fprintf(yyout, "#op:%s\n", yytext);
+	if(token)	fprintf(yyout, "#op:%s\n", yytext);
 	strcat(buffer, yytext);
 }
 {PUNC}  { 
-	fprintf(yyout, "#punc:%s\n", yytext);
+	if(token)	fprintf(yyout, "#punc:%s\n", yytext);
 	strcat(buffer, yytext);
 }
 {INT}	{ 
-	fprintf(yyout, "#integer:%s\n", yytext);
+	if(token)	fprintf(yyout, "#integer:%s\n", yytext);
 	strcat(buffer, yytext);
 }
 {DOUB}	{ 
-	fprintf(yyout, "#double:%s\n", yytext);
+	if(token)	fprintf(yyout, "#double:%s\n", yytext);
 	strcat(buffer, yytext); 
 }
 {CHAR}	{ 
-	fprintf(yyout, "#char:%s\n", yytext);
+	if(token)	fprintf(yyout, "#char:%s\n", yytext);
 	strcat(buffer, yytext); 
 }
 {ID}	{ 
-	fprintf(yyout, "#id:%s\n", yytext); 
+	if(token)	fprintf(yyout, "#id:%s\n", yytext); 
 	strcat(buffer, yytext);
 }
 {STR}	{
-	fprintf(yyout, "#string:%s\n", yytext);
+	if(token)	fprintf(yyout, "#string:%s\n", yytext);
 	strcat(buffer, yytext);
 }
 {SCI}	{
-	fprintf(yyout, "#sci:%s\n", yytext);
+	if(token)	fprintf(yyout, "#sci:%s\n", yytext);
 	strcat(buffer, yytext);
 }
 \n	{
 	line_number++;
-	fprintf(yyout, "%d:%s\n", line_number, buffer);
+	if(source)	fprintf(yyout, "%d:%s\n", line_number, buffer);
 	memset(buffer, 0, sizeof(buffer));
 }
 
