@@ -17,12 +17,12 @@ SPACE	[ \t\t]+
 OP		"+"|"-"|"*"|"/"|"%"|"++"|"--"|"<"|"<="|">"|">="|"=="|"!="|"="|"&&"|"||"|"!"
 PUNC	":"|";"|","|"."|"["|"]"|"("|")"|"{"|"}"
 INT		[1-9][0-9]*|0
-DOUB	{INT}?"."{INT}
+DOUB	(([0-9]*)"."([0-9]+))|([0-9]+".")
 CH		[a-z]
 CHAR	\'.\'
 ID		[[:alpha:]]+
 STR		L?\"(\\.|[^\\"])*\"
-SCI		({DOUB}|{INT})[Ee][+-]?{INT}
+SCI		({DOUB}|{INT})[Ee][+-]?[0-9]+
 S_ON	#{SPACE}?"pragma"{SPACE}"source"{SPACE}"on"
 S_OFF	#{SPACE}?"pragma"{SPACE}"source"{SPACE}"off"
 T_ON	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"on"
@@ -124,6 +124,7 @@ ERRVAR	({INT}|{DOUB}|{ID}|{SCI})({INT}|{DOUB}|{ID}|{SCI})+
     strcat(errorMessage, yytext);
 }
 <ERR>\n	{
+	line_number++;
 	fprintf(stderr, "Error at line %d: %s\n", line_number, errorMessage); exit(1); 
 }
 <ERR>.*	{
