@@ -8,6 +8,8 @@
 	int source = 1;
 %}
 
+%x COMMENT
+
 KEY		void|int|double|bool|char|null|for|while|do|if|else|switch|return|break|continue|const|true|false|struct|case|default|fclose|clearerr|feof|ferror|fflush|fgetpos|fopen|fread|freopen|fseek|fsetpos|ftell|fwrite|remove|rename|rewind|setbuf|setvbuf|tmpfile|tmpnam|fprintf|printf|sprintf|vfprintf|vprintf|vsprintf|fscanf|scanf|sscanf|fgetc|fgets|fputc|fputs|getc|getchar|gets|putc|putchar|puts|ungetc|perror
 SPACE	[ \t\t]+
 OP		"+"|"-"|"*"|"/"|"%"|"++"|"--"|"<"|"<="|">"|">="|"=="|"!="|"="|"&&"|"||"|"!"
@@ -25,6 +27,25 @@ T_ON	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"on"
 T_OFF	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"off"
 
 %%
+"/*"	{
+	BEGIN(COMMENT);
+	strcat(buffer, yytext);
+}
+<COMMENT>"*/"	{
+	strcat(buffer, yytext);
+	BEGIN(INITIAL);
+}
+<COMMENT>"\n"	{
+	line_number++;
+	if(source)	fprintf(yyout, "%d:%s\n", line_number, buffer);
+	memset(buffer, 0, sizeof(buffer));
+}
+<COMMENT>.	{
+	strcat(buffer, yytext);
+}
+"//".*	{
+	strcat(buffer, yytext);
+}
 {S_ON}	{
 	source = 1;
 	strcat(buffer, yytext);
