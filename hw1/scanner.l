@@ -3,12 +3,14 @@
 	#include <stdio.h>
 	#include <string.h>
 	char buffer[1000];
+	char errorMessage[1000];
 	int line_number = 0;
 	int token = 1;
 	int source = 1;
 %}
 
 %x COMMENT
+%x ERR
 
 KEY		void|int|double|bool|char|null|for|while|do|if|else|switch|return|break|continue|const|true|false|struct|case|default|fclose|clearerr|feof|ferror|fflush|fgetpos|fopen|fread|freopen|fseek|fsetpos|ftell|fwrite|remove|rename|rewind|setbuf|setvbuf|tmpfile|tmpnam|fprintf|printf|sprintf|vfprintf|vprintf|vsprintf|fscanf|scanf|sscanf|fgetc|fgets|fputc|fputs|getc|getchar|gets|putc|putchar|puts|ungetc|perror
 SPACE	[ \t\t]+
@@ -25,6 +27,7 @@ S_ON	#{SPACE}?"pragma"{SPACE}"source"{SPACE}"on"
 S_OFF	#{SPACE}?"pragma"{SPACE}"source"{SPACE}"off"
 T_ON	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"on"
 T_OFF	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"off"
+ERRVAR	({INT}|{DOUB}|{ID}|{SCI})({INT}|{DOUB}|{ID}|{SCI})+
 
 %%
 "/*"	{
@@ -94,19 +97,38 @@ T_OFF	#{SPACE}?"pragma"{SPACE}"token"{SPACE}"off"
 	strcat(buffer, yytext);
 }
 {STR}	{
-	if(token)	fprintf(yyout, "#string:%s\n", yytext);
+	char str_out[1000];
+	if(token){
+		if(yytext[0] == 'L')	strcpy(str_out, yytext + 2);
+		else	strcpy(str_out, yytext + 1);
+		str_out[strlen(str_out)-1] = 0;
+		fprintf(yyout, "#string:%s\n", str_out);
+	}
 	strcat(buffer, yytext);
 }
 {SCI}	{
 	if(token)	fprintf(yyout, "#sci:%s\n", yytext);
 	strcat(buffer, yytext);
 }
+{ERRVAR}	{
+	strcat(errorMessage, yytext);
+	BEGIN(ERR);
+}
 \n	{
 	line_number++;
 	if(source)	fprintf(yyout, "%d:%s\n", line_number, buffer);
 	memset(buffer, 0, sizeof(buffer));
 }
-
+.	{
+	BEGIN(ERR);
+    strcat(errorMessage, yytext);
+}
+<ERR>\n	{
+	fprintf(stderr, "Error at line %d: %s\n", line_number, errorMessage); exit(1); 
+}
+<ERR>.*	{
+	strcat(errorMessage, yytext);
+}
 %%
 
 int main(int argc, char* argv[])
